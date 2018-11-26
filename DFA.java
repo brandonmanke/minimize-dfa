@@ -42,14 +42,19 @@ public class DFA {
     }
     String dfaFileName = args[0];
     DFA dfa = parseDFAFile(dfaFileName);
-    System.out.println(dfa.toString());
+    //System.out.println(dfa.toString());
+    DFA minimized = dfa.minimize();
+    //System.out.println(minimized.toString());
+  }
+
+  public DFA minimize() {
+    return new DFA();
   }
 
   public static DFA parseDFAFile(String fileName) {
     File file = new File(fileName);
     int nstates = 0;
     int initState = 0;
-    int breakCount = 0;
     HashSet<String> sigma = new HashSet<>();
     HashSet<Integer> accepting = new HashSet<>();
     HashMap<Integer, HashMap<String, Integer>> dfa = new HashMap<>();
