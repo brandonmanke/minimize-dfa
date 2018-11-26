@@ -22,17 +22,17 @@ public class DFA {
   public DFA() {}
 
   public DFA(
-    int numberOfStates, 
-    int initialState, 
-    HashSet<String> sigma,
-    HashSet<Integer> finalStates,
-    HashMap<Integer, HashMap<String, Integer>> transitionMap) {
-      this.numberOfStates = numberOfStates;
-      this.initialState = initialState;
-      this.sigma = sigma;
-      this.finalStates = finalStates;
-      this.transitionMap = transitionMap;
-    }
+      int numberOfStates, 
+      int initialState, 
+      HashSet<String> sigma,
+      HashSet<Integer> finalStates,
+      HashMap<Integer, HashMap<String, Integer>> transitionMap) {
+    this.numberOfStates = numberOfStates;
+    this.initialState = initialState;
+    this.sigma = sigma;
+    this.finalStates = finalStates;
+    this.transitionMap = transitionMap;
+  }
 
   public static void main(String[] args) throws Exception {
     if (args.length != 2) {
