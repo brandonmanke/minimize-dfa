@@ -18,7 +18,7 @@ public class DFA {
 
   private int numberOfStates;
   private int initialState;
-  private Set<String> sigma = new HashSet<>();
+  private Set<String> sigma = new HashSet<>(); // alphabet accepted by dfa
   private Set<Integer> finalStates = new HashSet<>();
   private Set<Integer> states = new HashSet<>(); // set of all states
   private Map<Integer, HashMap<String, Integer>> transitionMap = new HashMap<>();
@@ -46,17 +46,15 @@ public class DFA {
         "Invalid input.\n Use: java DFA {dfaFile} {inputStringsFile}"
       );
     }
+
     String dfaFileName = args[0];
     String inputStringFile = args[1];
     try {
       DFA dfa = parseDFAFile(dfaFileName);
-      //System.out.println(dfa.toString());
-      //System.out.println();
       DFA minimized = dfa.minimize();
       System.out.println("\nMinimized DFA from " + dfaFileName + ":\n");
       System.out.println(minimized.formattedPrint());
       minimized.processInputStrings(inputStringFile);
-      //System.out.println(minimized.toString());
     } catch (Exception e) {
       e.printStackTrace();
       throw e;
@@ -65,6 +63,8 @@ public class DFA {
 
   // Hopcroft's Algorithm
   public DFA minimize() {
+    // Parition "set" initially contains two sets:
+    // One containing set of all final states and the set of all non final states.
     ArrayList<Set<Integer>> P = new ArrayList<>();
     P.add(finalStates);
     P.add(difference(states, finalStates));
@@ -72,14 +72,12 @@ public class DFA {
     W.add(finalStates);
     while (!W.isEmpty()) {
       Set<Integer> A = W.remove(0);
-      //System.out.println("A: " + A.toString());
       for (String symbol : sigma) {
         // set of states for which delta(qi, symbol) = a in A, (if true, add qi to X)
         Set<Integer> X = new HashSet<>();
         for (Map.Entry<Integer, HashMap<String, Integer>> entry : transitionMap.entrySet()) {
           int qi = entry.getKey();
           HashMap<String, Integer> transition = entry.getValue();
-          //System.out.println("Transition: " + transition.toString());
           int state = transition.get(symbol);
           if (A.contains(state)) {
             X.add(qi);
@@ -88,7 +86,7 @@ public class DFA {
         if (X.isEmpty()) {
           continue;
         }
-        //System.out.println("X: " + X.toString());
+
         ArrayList<Set<Integer>> newP = new ArrayList<>(P);
         for (Set<Integer> Y : P) {
           boolean removeYinP = false;
@@ -101,7 +99,7 @@ public class DFA {
             removeYinP = true;
           }
 
-          if (W.contains(Y)) { // unsure if this works..
+          if (W.contains(Y)) {
             W.add(intersectionSet);
             W.add(diffSet);
             removeYinW = true;
@@ -116,7 +114,6 @@ public class DFA {
           if (removeYinP) {
             newP.remove(Y);
           }
-
           if (removeYinW) {
             W.remove(Y);
           }
@@ -124,9 +121,6 @@ public class DFA {
         P = newP;
       }
     }
-    //System.out.println("=========== P:");
-    //System.out.println("P Size: " + P.size());
-    //System.out.println(P.toString());
     DFA minimizedDfa = constructMinimizedDfa(P);
     return minimizedDfa;
   }
@@ -259,7 +253,6 @@ public class DFA {
         }
       }
     } catch (Exception e) {
-      //e.printStackTrace();
       throw e;
     }
     return new DFA(nstates, initState, sigma, accepting, states, dfa);
@@ -278,9 +271,6 @@ public class DFA {
     sb.append(transitionMap.toString());
     sb.append("\nAccepting State(s): ");
     sb.append(finalStates.toString());
-
-    //sb.append("\nAll states: (Q):\n");
-    //sb.append(states.toString());
     return sb.toString();
   }
 
