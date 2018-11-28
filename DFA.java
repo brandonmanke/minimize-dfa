@@ -6,7 +6,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.BufferedReader;
 
+import java.util.Set;
 import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.StringTokenizer;
@@ -15,8 +17,9 @@ public class DFA {
 
   private int numberOfStates;
   private int initialState;
-  private HashSet<String> sigma = new HashSet<>();
-  private HashSet<Integer> finalStates = new HashSet<>();
+  private Set<String> sigma = new HashSet<>();
+  private Set<Integer> finalStates = new HashSet<>();
+  private Set<Integer> states = new HashSet<>(); // set of all states
   private HashMap<Integer, HashMap<String, Integer>> transitionMap = new HashMap<>();
 
   public DFA() {}
@@ -24,13 +27,15 @@ public class DFA {
   public DFA(
       int numberOfStates, 
       int initialState, 
-      HashSet<String> sigma,
-      HashSet<Integer> finalStates,
+      Set<String> sigma,
+      Set<Integer> finalStates,
+      Set<Integer> states,
       HashMap<Integer, HashMap<String, Integer>> transitionMap) {
     this.numberOfStates = numberOfStates;
     this.initialState = initialState;
     this.sigma = sigma;
     this.finalStates = finalStates;
+    this.states = states;
     this.transitionMap = transitionMap;
   }
 
@@ -42,12 +47,24 @@ public class DFA {
     }
     String dfaFileName = args[0];
     DFA dfa = parseDFAFile(dfaFileName);
-    //System.out.println(dfa.toString());
+    System.out.println(dfa.toString());
+    System.out.println();
     DFA minimized = dfa.minimize();
     //System.out.println(minimized.toString());
   }
 
   public DFA minimize() {
+    ArrayList<Set<Integer>> P = new ArrayList<>();
+    P.add(finalStates);
+    P.add(difference(states, finalStates));
+    ArrayList<Set<Integer>> W = new ArrayList<>(); // could be stack
+    W.add(finalStates);
+    while (!W.isEmpty()) {
+      Set<Integer> A = W.remove(0);
+      for (String symbol : sigma) {
+
+      }
+    }
     return new DFA();
   }
 
@@ -55,8 +72,9 @@ public class DFA {
     File file = new File(fileName);
     int nstates = 0;
     int initState = 0;
-    HashSet<String> sigma = new HashSet<>();
-    HashSet<Integer> accepting = new HashSet<>();
+    Set<String> sigma = new HashSet<>();
+    Set<Integer> accepting = new HashSet<>();
+    Set<Integer> states = new HashSet<>();
     HashMap<Integer, HashMap<String, Integer>> dfa = new HashMap<>();
     try (BufferedReader br = new BufferedReader(new FileReader(file))) {
       String s;
@@ -94,13 +112,14 @@ public class DFA {
             int n = Integer.parseInt(st.nextToken());
             transitions.put(iter.next(), n);
           }
+          states.add(state);
           dfa.put(state, transitions);
         }
       }
     } catch (Exception e) {
       e.printStackTrace();
     }
-    return new DFA(nstates, initState, sigma, accepting, dfa);
+    return new DFA(nstates, initState, sigma, accepting, states, dfa);
   }
 
   @Override
@@ -116,6 +135,27 @@ public class DFA {
     sb.append(transitionMap.toString());
     sb.append("\nAccepting State(s): ");
     sb.append(finalStates.toString());
+
+    //sb.append("\nAll states: (Q):\n");
+    //sb.append(states.toString());
     return sb.toString();
+  }
+
+  public static Set<Integer> union(Set<Integer> s1, Set<Integer> s2) {
+    Set<Integer> union = new HashSet<Integer>(s1);
+    union.addAll(s2);
+    return union;
+  }
+
+  public static Set<Integer> intersection(Set<Integer> s1, Set<Integer> s2) {
+    Set<Integer> intersection = new HashSet<Integer>(s1);
+    intersection.retainAll(s2);
+    return intersection;
+  }
+
+  public static Set<Integer> difference(Set<Integer> s1, Set<Integer> s2) {
+    Set<Integer> difference = new HashSet<Integer>(s1);
+    difference.removeAll(s2);
+    return difference;
   }
 }
