@@ -1,5 +1,6 @@
 /**
  * @author Brandon Manke
+ * Minimize DFA using Hopcrofts Algorithm
  */
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,6 +12,7 @@ import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 public class DFA {
@@ -20,7 +22,7 @@ public class DFA {
   private Set<String> sigma = new HashSet<>();
   private Set<Integer> finalStates = new HashSet<>();
   private Set<Integer> states = new HashSet<>(); // set of all states
-  private HashMap<Integer, HashMap<String, Integer>> transitionMap = new HashMap<>();
+  private Map<Integer, HashMap<String, Integer>> transitionMap = new HashMap<>();
 
   public DFA() {}
 
@@ -30,7 +32,7 @@ public class DFA {
       Set<String> sigma,
       Set<Integer> finalStates,
       Set<Integer> states,
-      HashMap<Integer, HashMap<String, Integer>> transitionMap) {
+      Map<Integer, HashMap<String, Integer>> transitionMap) {
     this.numberOfStates = numberOfStates;
     this.initialState = initialState;
     this.sigma = sigma;
@@ -46,13 +48,18 @@ public class DFA {
       );
     }
     String dfaFileName = args[0];
-    DFA dfa = parseDFAFile(dfaFileName);
-    System.out.println(dfa.toString());
-    System.out.println();
-    DFA minimized = dfa.minimize();
-    //System.out.println(minimized.toString());
+    try {
+      DFA dfa = parseDFAFile(dfaFileName);
+      System.out.println(dfa.toString());
+      System.out.println();
+      DFA minimized = dfa.minimize();
+      //System.out.println(minimized.toString());
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
+  // Hopcrofts Algorithm
   public DFA minimize() {
     ArrayList<Set<Integer>> P = new ArrayList<>();
     P.add(finalStates);
@@ -61,21 +68,79 @@ public class DFA {
     W.add(finalStates);
     while (!W.isEmpty()) {
       Set<Integer> A = W.remove(0);
+      //System.out.println("A: " + A.toString());
       for (String symbol : sigma) {
+        // set of states for which delta(qi, symbol) = a in A, (if true, add qi to X)
+        Set<Integer> X = new HashSet<>();
+        for (Map.Entry<Integer, HashMap<String, Integer>> entry : transitionMap.entrySet()) {
+          int qi = entry.getKey();
+          HashMap<String, Integer> transition = entry.getValue();
+          //System.out.println("Transition: " + transition.toString());
+          int state = transition.get(symbol);
+          if (A.contains(state)) {
+            X.add(qi);
+          }
+        }
+        if (X.isEmpty()) {
+          continue;
+        }
+        //System.out.println("X: " + X.toString());
+        ArrayList<Set<Integer>> newP = new ArrayList<>(P);
+        for (Set<Integer> Y : P) {
+          boolean removeYinP = false;
+          boolean removeYinW = false;
+          Set<Integer> intersectionSet = intersection(X, Y);
+          Set<Integer> diffSet = difference(Y, X);
+          if (!intersectionSet.isEmpty() && !diffSet.isEmpty()) {
+            newP.add(intersectionSet);
+            newP.add(diffSet);
+            removeYinP = true;
+          }
 
+          if (W.contains(Y)) { // unsure if this works..
+            W.add(intersectionSet);
+            W.add(diffSet);
+            removeYinW = true;
+          } else {
+            if (intersectionSet.size() <= diffSet.size()) {
+              W.add(intersectionSet); // add X ∩ Y to W
+            } else {
+              W.add(diffSet); // add X \ Y to W
+            }
+          }
+
+          if (removeYinP) {
+            newP.remove(Y);
+          }
+
+          if (removeYinW) {
+            W.remove(Y);
+          }
+        }
+        P = newP;
       }
     }
+    System.out.println("=========== P:");
+    System.out.println("P Size: " + P.size());
+    System.out.println(P.toString());
+
+    DFA minimizedDfa = constructMinimizedDfa(P, this);
+    return minimizedDfa;
+  }
+
+  // TODO construct new dfa here
+  public static DFA constructMinimizedDfa(ArrayList<Set<Integer>> P, DFA oldDFA) {
     return new DFA();
   }
 
-  public static DFA parseDFAFile(String fileName) {
+  public static DFA parseDFAFile(String fileName) throws Exception {
     File file = new File(fileName);
     int nstates = 0;
     int initState = 0;
     Set<String> sigma = new HashSet<>();
     Set<Integer> accepting = new HashSet<>();
     Set<Integer> states = new HashSet<>();
-    HashMap<Integer, HashMap<String, Integer>> dfa = new HashMap<>();
+    Map<Integer, HashMap<String, Integer>> dfa = new HashMap<>();
     try (BufferedReader br = new BufferedReader(new FileReader(file))) {
       String s;
       while ((s = br.readLine()) != null) {
@@ -117,7 +182,8 @@ public class DFA {
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      //e.printStackTrace();
+      throw e;
     }
     return new DFA(nstates, initState, sigma, accepting, states, dfa);
   }
