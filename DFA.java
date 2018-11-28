@@ -3,7 +3,6 @@
  * Minimize DFA using Hopcroft's Algorithm
  */
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.BufferedReader;
 
@@ -48,15 +47,19 @@ public class DFA {
       );
     }
     String dfaFileName = args[0];
+    String inputStringFile = args[1];
     try {
       DFA dfa = parseDFAFile(dfaFileName);
       //System.out.println(dfa.toString());
       //System.out.println();
       DFA minimized = dfa.minimize();
-      System.out.println("\nMinimized DFA:\n");
+      System.out.println("\nMinimized DFA from " + dfaFileName + ":\n");
+      System.out.println(minimized.formattedPrint());
+      minimized.processInputStrings(inputStringFile);
       //System.out.println(minimized.toString());
     } catch (Exception e) {
       e.printStackTrace();
+      throw e;
     }
   }
 
@@ -165,6 +168,7 @@ public class DFA {
         }
       }
       // add new transitions for current state to transition map
+      newStates.add(i);
       newTransitionMap.put(i, newTransitions);
     }
 
@@ -176,6 +180,34 @@ public class DFA {
       newStates,
       newTransitionMap
     );
+  }
+
+  public void processInputStrings(String fileName) throws Exception {
+    File file = new File(fileName);
+    System.out.println("The following strings are accepted:");
+    try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+      String s;
+      while ((s = br.readLine()) != null) {
+        s = s.trim();
+        if (s.isEmpty()) {
+          continue;
+        }
+        int currentState = initialState;
+        boolean valid = true;
+        for (Character c : s.toCharArray()) {
+          HashMap<String, Integer> transitions = this.transitionMap.get(currentState);
+          String symbol = Character.toString(c);
+          if (!transitions.containsKey(symbol)) {
+            valid = false;
+            break;
+          }
+          currentState = transitions.get(symbol);
+        }
+        if (this.finalStates.contains(currentState) && valid) {
+          System.out.println(s);
+        }
+      }
+    }
   }
 
   public static DFA parseDFAFile(String fileName) throws Exception {
@@ -250,6 +282,47 @@ public class DFA {
     //sb.append("\nAll states: (Q):\n");
     //sb.append(states.toString());
     return sb.toString();
+  }
+
+  public String formattedPrint() {
+    final String space = "    ";
+    StringBuffer sb = new StringBuffer();
+    sb.append("Sigma:");
+    this.sigma.forEach(symbol -> {
+      sb.append(space);
+      sb.append(symbol);
+    });
+    int lineLength = sb.toString().length();
+    printLine(sb, lineLength);
+    for (int state : this.states) {
+      sb.append(space);
+      sb.append(state);
+      sb.append(":");
+      HashMap<String, Integer> transitions = this.transitionMap.get(state);
+      this.sigma.forEach(symbol -> {
+        sb.append(space);
+        sb.append(transitions.get(symbol));
+      });
+      sb.append("\n");
+    }
+    printLine(sb, lineLength);
+    sb.append(this.initialState);
+    sb.append(":");
+    sb.append(" Initial State\n");
+    this.finalStates.forEach(state -> {
+      sb.append(state);
+      sb.append(",");
+    });
+    sb.append(": Accepting State(s)\n");
+    return sb.toString();
+  }
+
+  private static void printLine(StringBuffer sb, int len) {
+    sb.append("\n");
+    for (int i = 0; i < len; i++) {
+      sb.append("-");
+    }
+    sb.append("\n");
   }
 
   // Set related operations
