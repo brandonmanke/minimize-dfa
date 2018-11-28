@@ -1,6 +1,6 @@
 /**
  * @author Brandon Manke
- * Minimize DFA using Hopcrofts Algorithm
+ * Minimize DFA using Hopcroft's Algorithm
  */
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -50,16 +50,17 @@ public class DFA {
     String dfaFileName = args[0];
     try {
       DFA dfa = parseDFAFile(dfaFileName);
-      System.out.println(dfa.toString());
-      System.out.println();
+      //System.out.println(dfa.toString());
+      //System.out.println();
       DFA minimized = dfa.minimize();
+      System.out.println("\nMinimized DFA:\n");
       //System.out.println(minimized.toString());
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
 
-  // Hopcrofts Algorithm
+  // Hopcroft's Algorithm
   public DFA minimize() {
     ArrayList<Set<Integer>> P = new ArrayList<>();
     P.add(finalStates);
@@ -120,17 +121,61 @@ public class DFA {
         P = newP;
       }
     }
-    System.out.println("=========== P:");
-    System.out.println("P Size: " + P.size());
-    System.out.println(P.toString());
-
-    DFA minimizedDfa = constructMinimizedDfa(P, this);
+    //System.out.println("=========== P:");
+    //System.out.println("P Size: " + P.size());
+    //System.out.println(P.toString());
+    DFA minimizedDfa = constructMinimizedDfa(P);
     return minimizedDfa;
   }
 
-  // TODO construct new dfa here
-  public static DFA constructMinimizedDfa(ArrayList<Set<Integer>> P, DFA oldDFA) {
-    return new DFA();
+  // Constructed minimized dfa based off of partition from Hopcroft's Algorithm
+  public DFA constructMinimizedDfa(ArrayList<Set<Integer>> P) {
+    int newNumOfStates = 0;
+    int newInitialState = 0;
+    Set<Integer> newStates = new HashSet<>();
+    Set<Integer> newFinalStates = new HashSet<>();
+    Map<Integer, HashMap<String, Integer>> newTransitionMap = new HashMap<>();
+    for (int i = 0; i < P.size(); i++) {
+      Set<Integer> newState = P.get(i);
+      if (newState.isEmpty()) {
+        continue;
+      }
+      if (newState.contains(this.initialState)) {
+        newInitialState = i;
+      }
+      for (int state : newState) {
+        if (this.finalStates.contains(state)) {
+          newFinalStates.add(i);
+        }
+      }
+      newNumOfStates++;
+
+      // We only need one element from this set since they
+      // have already been reduced at this point.
+      int first = newState.iterator().next();
+      HashMap<String, Integer> transitions = this.transitionMap.get(first);
+      HashMap<String, Integer> newTransitions = new HashMap<>();
+      for (String symbol : this.sigma) {
+        int state = transitions.get(symbol); // old transition: delta(i, symbol) = state
+        for (int j = 0; j < P.size(); j++) {
+          Set<Integer> otherNewState = P.get(j);
+          if (otherNewState.contains(state)) {
+            newTransitions.put(symbol, j);
+          }
+        }
+      }
+      // add new transitions for current state to transition map
+      newTransitionMap.put(i, newTransitions);
+    }
+
+    return new DFA(
+      newNumOfStates, 
+      newInitialState, 
+      this.sigma, 
+      newFinalStates,
+      newStates,
+      newTransitionMap
+    );
   }
 
   public static DFA parseDFAFile(String fileName) throws Exception {
@@ -207,6 +252,8 @@ public class DFA {
     return sb.toString();
   }
 
+  // Set related operations
+        
   public static Set<Integer> union(Set<Integer> s1, Set<Integer> s2) {
     Set<Integer> union = new HashSet<Integer>(s1);
     union.addAll(s2);
